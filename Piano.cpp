@@ -51,17 +51,15 @@ void playNote(const Piano& piano, char key) {
 
 using key_iterator = std::vector<char>::const_iterator;
 
-void play(const Piano& piano, const key_iterator iter, const key_iterator end, std::unique_ptr<ShiftGuard>& shift_ptr) {
-    if (iter == end) return;
+void play(const Piano& piano, const Note& note, std::unique_ptr<ShiftGuard>& shift_ptr) {
 
-    if (const char key = *iter; isBlackKey(key)) {
-        if (!shift_ptr) shift_ptr = std::make_unique<ShiftGuard>(piano); // ensure we have a shift guard
+    for (auto key : note.keys) {
+        if (isBlackKey(key)) {
+            if (!shift_ptr) shift_ptr = std::make_unique<ShiftGuard>(piano); // ensure we have a shift guard
+        } else {
+            shift_ptr.reset(); // destroy any existing shift guard
+        }
         playNote(piano, key);
-        play(piano, iter+1, end, shift_ptr);
-    } else {
-        shift_ptr.reset(); // destroy any existing shift guard
-        playNote(piano, key);
-        play(piano, iter+1, end, shift_ptr);
     }
 }
 
@@ -75,7 +73,7 @@ void Piano::play() {
     {
         std::unique_ptr<ShiftGuard> optShift;
         for (auto &note : *this->loaded_song) {
-            ::play(*this, note.keys.cbegin(), note.keys.cend(), optShift);
+            ::play(*this, note, optShift);
         }
     }
 
