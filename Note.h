@@ -3,12 +3,27 @@
 #include <vector>
 #include <cassert>
 #include <functional>
+#include <set>
 
 #include <Windows.h>
 
 
 constexpr auto FAST_DELAY = 100; // {}
 constexpr auto NO_DELAY = 1; // [] play together
+
+const std::set<char> VALID_KEYS = {
+    '1', '!', '2', '@', '3', '4', '$', '5', '%', '6', '^', '7', '8', '*', '9', '(', '0',
+    'q', 'Q', 'w', 'W', 'e', 'E', 'r', 't', 'T', 'y', 'Y', 'u', 'i', 'I', 'o', 'O', 'p', 'P', 'a', 's', 'S', 'd', 'D', 'f', 'g', 'G', 'h', 'H', 'j', 'J', 'k', 'l', 'L', 'z', 'Z', 'x', 'c', 'C', 'v', 'V', 'b', 'B', 'n', 'm'
+};
+
+const std::set<char> GROUP_CHARS = {
+    '[', ']', '(', ')',
+    '{', '}'
+};
+
+
+
+
 
 struct Note;
 
@@ -26,7 +41,7 @@ enum class NoteType {
 };
 
 struct Note {
-    const NoteType type; // probably not gonna need this
+    const NoteType type;
 
     const std::vector<char> keys;
     // Delay between each of this note's keys.
@@ -35,8 +50,6 @@ struct Note {
     // For Single and 0 note keys this can be anything
     const unsigned int multi_key_delay;
 
-    //const note_player_t notePlayer;
-    Note(const Note& other) = default;
 
     static Note singletonNote(char key) {
         return Note{NoteType::SINGLETON, {key}, 0};
@@ -53,6 +66,8 @@ struct Note {
     }
 
 };
+
+using song_t = std::vector<Note>; // TODO: song struct?
 
 
 

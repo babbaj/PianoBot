@@ -20,11 +20,20 @@ const std::vector<Note> parseNoteFile(std::ifstream &stream) {
     return out;
 }
 
-void Piano::play(const std::string &file) noexcept(false) {
+
+void Piano::load(const std::string &file) noexcept(false) {
     std::ifstream stream(file.c_str());
     stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     auto notes = parseNoteFile(stream);
-    for (auto &note : notes) {
+    this->loaded_song = std::move(notes);
+}
+
+void Piano::play() {
+    if (!this->loaded_song) {
+        std::cerr << "No loaded song\n";
+        return;
+    }
+    for (auto &note : *this->loaded_song) {
         for (char key : note.keys) {
             SendMessage(hWindowHandle, WM_KEYDOWN, key, 0x1);
             Sleep(5);
@@ -33,5 +42,4 @@ void Piano::play(const std::string &file) noexcept(false) {
             Sleep(200);
         }
     }
-
 }
