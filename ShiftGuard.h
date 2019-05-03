@@ -1,6 +1,7 @@
 #pragma once
 
 #include <exception>
+#include <iostream>
 #include "Piano.h"
 
 constexpr auto SHIFT_LPARAM = 0x002C0001; // includes scancode

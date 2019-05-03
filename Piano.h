@@ -17,6 +17,8 @@ public:
     explicit Piano(HWND windowHandle): hWindowHandle(windowHandle)
     {}
 
+    Piano(const Piano&) = delete;
+
     void load(const std::string &file) noexcept(false); // throws std::ifstream::failure
 
 
