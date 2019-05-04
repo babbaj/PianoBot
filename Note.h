@@ -9,7 +9,7 @@
 #include <Windows.h>
 
 
-constexpr auto NOTE_LENGTH = 200;
+constexpr auto NOTE_LENGTH = 150;
 
 constexpr auto FAST_DELAY = 50; // {}
 constexpr auto NO_DELAY = 3; // [] play together
@@ -19,10 +19,6 @@ constexpr auto NO_DELAY = 3; // [] play together
 class Note;
 
 using note_player_t = auto(*) (Note&) -> void;
-
-//void playMultiNote(Note& note);
-//void playSingleNote(Note& note);
-//void playSilentNote(Note& note);
 
 enum class NoteType {
     SINGLETON,
@@ -39,21 +35,21 @@ public:
     union {
         // Delay between each of this note's keys.
         // For [] notes this should be NO_DELAY
-        // For {} notes this should be set to FAST_DELAY
         // For Single and Silent keys this will be the same value as delay (this is a union)
         const unsigned int multi_key_delay;
 
         // delay between this note and the next
+        // only for silent notes
         const unsigned int delay;
     };
 
 
     static Note singletonNote(char key) {
-        return Note{NoteType::SINGLETON, {key}, NOTE_LENGTH};
+        return Note{NoteType::SINGLETON, {key}, 0};
     }
 
-    static Note silentNote(char key) {
-        return Note{NoteType::SILENT, {}, NOTE_LENGTH};
+    static Note silentNote(unsigned int length) {
+        return Note{NoteType::SILENT, {}, length};
     }
 
     template<typename Iter>

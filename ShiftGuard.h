@@ -20,6 +20,7 @@ public:
         }
         isHeld = true;
         SendMessage(piano.hWindowHandle, WM_KEYDOWN, VK_SHIFT, SHIFT_LPARAM);
+        Sleep(NO_DELAY); // not sure if this fixes anything
     }
 
     ~ShiftGuard() {

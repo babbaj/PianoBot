@@ -4,6 +4,10 @@
 #include <Windows.h>
 
 #include "Piano.h"
+#include "MidiFile.h"
+
+#include <regex>
+
 
 
 int main(const int argc, const char* argv[]) {
@@ -14,7 +18,7 @@ int main(const int argc, const char* argv[]) {
 
     HWND hWindowHandle = FindWindow(nullptr, "Garry's Mod"); // TODO: find by process name
     if (!hWindowHandle) {
-        std::cerr << "Failed to acqure handle\n";
+        std::cerr << "Failed to acquire handle\n";
         return 1;
     }
     Piano piano(hWindowHandle);
@@ -27,23 +31,11 @@ int main(const int argc, const char* argv[]) {
         return 1;
     }
 
-    while (1) {
+    //while (1) {
         piano.play();
-        Sleep(200);
-    }
+        //Sleep(1000);
+    //}
 
-    //SendMessage(hWindowHandle, WM_KEYDOWN, VK_SHIFT, SHIFT_LPARAM);
 
-    /*while (1) {
-        for (auto key : COLDPLAY) {
-         SendMessage(hWindowHandle, WM_KEYDOWN, key, 0x1);
-         Sleep(5);
-         SendMessage(hWindowHandle, WM_KEYUP, key, 0x1);
-
-         Sleep(200);
-        }
-    }*/
-
-    //SendMessage(hWindowHandle, WM_KEYUP, VK_SHIFT, SHIFT_LPARAM);
     return 0;
 }
