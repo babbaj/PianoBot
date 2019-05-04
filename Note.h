@@ -11,8 +11,8 @@
 
 constexpr auto NOTE_LENGTH = 200;
 
-constexpr auto FAST_DELAY = 100; // {}
-constexpr auto NO_DELAY = 1; // [] play together
+constexpr auto FAST_DELAY = 50; // {}
+constexpr auto NO_DELAY = 3; // [] play together
 
 
 
@@ -35,15 +35,21 @@ public:
     const NoteType type;
 
     const std::vector<char> keys;
-    // Delay between each of this note's keys.
-    // For []/() notes this should be 0
-    // For {} notes this should be set to FAST_DELAY (100)
-    // For Single and 0 note keys this can be anything
-    const unsigned int multi_key_delay;
+
+    union {
+        // Delay between each of this note's keys.
+        // For [] notes this should be NO_DELAY
+        // For {} notes this should be set to FAST_DELAY
+        // For Single and Silent keys this will be the same value as delay (this is a union)
+        const unsigned int multi_key_delay;
+
+        // delay between this note and the next
+        const unsigned int delay;
+    };
 
 
     static Note singletonNote(char key) {
-        return Note{NoteType::SINGLETON, {key}, 0};
+        return Note{NoteType::SINGLETON, {key}, NOTE_LENGTH};
     }
 
     static Note silentNote(char key) {
@@ -51,7 +57,7 @@ public:
     }
 
     template<typename Iter>
-    Note fastMultiNote(Iter begin, Iter end) { // {} groups
+    Note fastMultiNote(Iter begin, Iter end) { // {} groups // TODO: delete this
         assert(begin != end);
         return Note{NoteType::MULTI, {begin, end}, FAST_DELAY};
     }

@@ -11,6 +11,7 @@
 #include <vector>
 #include <iostream>
 #include <regex>
+#include <cctype>
 
 void playMultiNote(const Piano* piano, const Note& note) {
     assert(note.type == NoteType::MULTI);
@@ -69,15 +70,21 @@ void Piano::load(const std::string &file) noexcept(false) {
 }
 
 void playNote(const Piano& piano, char key) {
+    if (key >= 97 && key <= 122) {
+        key = std::toupper(key); // TODO: put this somewhere else
+    }
     SendMessage(piano.hWindowHandle, WM_KEYDOWN, key, 0x1);
-    Sleep(5);
+    Sleep(NO_DELAY);
     SendMessage(piano.hWindowHandle, WM_KEYUP, key, 0x1);
-    Sleep(200);
 }
 
 using key_iterator = std::vector<char>::const_iterator;
 
 void play(const Piano& piano, const Note& note, std::unique_ptr<ShiftGuard>& shift_ptr) {
+    if (note.type == NoteType::SILENT) {
+        Sleep(note.delay);
+        return;
+    }
 
     for (auto key : note.keys) {
         if (isBlackKey(key)) {
@@ -86,6 +93,7 @@ void play(const Piano& piano, const Note& note, std::unique_ptr<ShiftGuard>& shi
             shift_ptr.reset(); // destroy any existing shift guard
         }
         playNote(piano, key);
+        Sleep(note.multi_key_delay);
     }
 }
 
@@ -99,41 +107,9 @@ void Piano::play() {
     {
         std::unique_ptr<ShiftGuard> optShift;
         for (auto &note : *this->loaded_song) {
-            for (char key : note.keys) {
-                playNote(*this, key);
-            }
+            ::play(*this, note, optShift);
         }
     }
 
-    /*for (auto &note : *this->loaded_song) {
-        //for (char key : note.keys) {
-        //  SendMessage(hWindowHandle, WM_KEYDOWN, key, 0x1);
-        //  Sleep(5);
-        //  SendMessage(hWindowHandle, WM_KEYUP, key, 0x1);
-        //
-        //    Sleep(200);
-        //}
-        switch(note.type) {
-            case NoteType::SINGLETON: {
-                playNote(this, note.key[0]);
-
-            } break;
-            case NoteType::FAST_MULTI: {
-
-
-            } break;
-            case NoteType::MULTI: {
-
-
-            } break;
-            case NoteType::SILENT: {
-                Sleep(500); // TODO: figure out good sleep time
-            } break;
-
-            default: throw std::exception("unknown enum");
-        }
-
-
-    }*/
 }
 
