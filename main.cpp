@@ -4,10 +4,7 @@
 #include <Windows.h>
 
 #include "Piano.h"
-#include "MidiFile.h"
-
-#include <regex>
-
+//#include "MidiFile.h"
 
 
 int main(const int argc, const char* argv[]) {
@@ -27,7 +24,7 @@ int main(const int argc, const char* argv[]) {
         piano.load("song.txt");
     } catch(std::ifstream::failure &ex) {
         std::cerr << "Failed to read file\n";
-        std::cerr << ex.what() << '\n';
+        std::cerr << ex.what() << '\n'; // not very useful
         return 1;
     }
 

@@ -130,8 +130,6 @@ void playKey(const Piano &piano, char key) {
     SendMessage(piano.hWindowHandle, WM_KEYUP, key, 0x1);
 }
 
-using key_iterator = std::vector<char>::const_iterator;
-
 void play(const Piano& piano, const Note& note, std::unique_ptr<ShiftGuard>& shift_ptr) {
     if (note.type == NoteType::SILENT) {
         Sleep(note.delay);
