@@ -4,35 +4,34 @@
 #include <cassert>
 #include <functional>
 #include <set>
+#include <type_traits>
 
 #include <Windows.h>
 
+
+constexpr auto NOTE_LENGTH = 200;
 
 constexpr auto FAST_DELAY = 100; // {}
 constexpr auto NO_DELAY = 1; // [] play together
 
 
 
-
-
-
-
-struct Note;
+class Note;
 
 using note_player_t = auto(*) (Note&) -> void;
 
-void playMultiNote(Note& note);
-void playSingleNote(Note& note);
-void playSilentNote(Note& note);
+//void playMultiNote(Note& note);
+//void playSingleNote(Note& note);
+//void playSilentNote(Note& note);
 
 enum class NoteType {
     SINGLETON,
-    FAST_MULTI,
     MULTI,
     SILENT // used for delay
 };
 
-struct Note {
+class Note {
+public:
     const NoteType type;
 
     const std::vector<char> keys;
@@ -47,14 +46,20 @@ struct Note {
         return Note{NoteType::SINGLETON, {key}, 0};
     }
 
-    static Note FastMultiNote(std::initializer_list<char> keys) { // {} groups
-        assert(keys.size() > 0);
-        return Note{NoteType::FAST_MULTI, {keys}, FAST_DELAY};
+    static Note silentNote(char key) {
+        return Note{NoteType::SILENT, {}, NOTE_LENGTH};
     }
 
-    static Note MultiNote(std::initializer_list<char> keys) { // []/() groups
-        assert(keys.size() > 0);
-        return Note{NoteType ::MULTI, {keys}, NO_DELAY};
+    template<typename Iter>
+    Note fastMultiNote(Iter begin, Iter end) { // {} groups
+        assert(begin != end);
+        return Note{NoteType::MULTI, {begin, end}, FAST_DELAY};
+    }
+
+    template<typename Iter>
+    static Note multiNote(Iter begin, Iter end) { // []/() groups
+        assert(begin != end);
+        return Note{NoteType ::MULTI, {begin, end}, NO_DELAY};
     }
 
 };

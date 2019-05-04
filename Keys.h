@@ -39,8 +39,11 @@ const std::set<char> VALID_KEYS = {
 };
 
 const std::set<char> GROUP_CHARS = {
-    '[', ']', '(', ')',
-    '{', '}'
+    '[', ']'
+};
+
+const std::set<char> PAUSE_CHARS = {
+    '#', '&', ')', '|'/*, '-'*/
 };
 
 bool isBlackKey(char key) {

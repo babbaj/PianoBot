@@ -10,27 +10,53 @@
 #include <memory>
 #include <vector>
 #include <iostream>
+#include <regex>
 
 void playMultiNote(const Piano* piano, const Note& note) {
-    assert(note.type == NoteType::MULTI || note.type == NoteType::FAST_MULTI);
+    assert(note.type == NoteType::MULTI);
 }
 
-void playSingleNote(const Piano* piano, const Note& note) {
-    assert(note.type == NoteType::SINGLETON);
-    SendMessage(piano->hWindowHandle, WM_KEYDOWN, note.keys[0], 0x1);
-    Sleep(5);
-    SendMessage(piano->hWindowHandle, WM_KEYUP, note.keys[0], 0x1);
+static const std::vector<std::string> splitByRegex(const std::string &input, const std::regex &pattern) {
+    std::sregex_iterator iter(input.begin(), input.end(), pattern); // std::regex_search is literally broken
+    std::sregex_iterator iter_end;
+    std::vector<std::string> args;
+
+    std::for_each(iter, iter_end, [&](auto& match) {
+        args.push_back(match.str());
+    });
+
+    return args;
 }
 
+bool isMulti(const std::string& regex_token) {
+    static const std::regex multi_regex(R"RE(\[[^\[\]]+\])RE");
+    return std::regex_match(regex_token, multi_regex);
+}
 
-
-// TODO: parse note files properly
 const std::vector<Note> parseNoteFile(std::ifstream &stream) {
+    static const std::regex regex(R"RE([^\[\]]+|(\[.+\]))RE");
+
     const std::string str((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+
+    const auto vec = splitByRegex(str, regex);
+
     std::vector<Note> out;
-    for (char c : str) {
-        out.push_back(Note::singletonNote(c));
+    for (const auto& token : vec) {
+        if (isMulti(str)) {
+            out.push_back(Note::multiNote(token.begin() + 1, token.end() - 1));
+        } else {
+            for (char c : token) {
+                if (c == ' ' || PAUSE_CHARS.find(c) != PAUSE_CHARS.end()) {
+                    out.push_back(Note::silentNote(c));
+                } else if (VALID_KEYS.find(c) != VALID_KEYS.end()) {
+                    out.push_back(Note::singletonNote(c));
+                } else {
+                    // ignored
+                }
+            }
+        }
     }
+
     return out;
 }
 
@@ -73,7 +99,9 @@ void Piano::play() {
     {
         std::unique_ptr<ShiftGuard> optShift;
         for (auto &note : *this->loaded_song) {
-            ::play(*this, note, optShift);
+            for (char key : note.keys) {
+                playNote(*this, key);
+            }
         }
     }
 
@@ -87,7 +115,7 @@ void Piano::play() {
         //}
         switch(note.type) {
             case NoteType::SINGLETON: {
-                playSingleNote(this, note);
+                playNote(this, note.key[0]);
 
             } break;
             case NoteType::FAST_MULTI: {
