@@ -19,7 +19,7 @@ public:
 
     Piano(const Piano&) = delete;
 
-    void load(const std::string &file) noexcept(false); // throws std::ifstream::failure
+    void load(const char* file) noexcept(false); // throws std::ifstream::failure
 
 
     void play();

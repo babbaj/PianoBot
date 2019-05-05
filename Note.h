@@ -43,7 +43,7 @@ public:
     };
 
 
-    static Note singletonNote(char key) {
+    static Note singleNote(char key) {
         return Note{NoteType::SINGLETON, {key}, 0};
     }
 

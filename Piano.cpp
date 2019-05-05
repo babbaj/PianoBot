@@ -92,7 +92,7 @@ const std::vector<Note> parseNoteFile(std::ifstream &stream) {
                 if (c == ' ' || PAUSE_CHARS.find(c) != PAUSE_CHARS.end()) {
                     out.push_back(Note::silentNote(c == ' ' ? NOTE_LENGTH : NOTE_LENGTH * 4)); // TODO: find good pause time
                 } else if (VALID_KEYS.find(c) != VALID_KEYS.end()) {
-                    out.push_back(Note::singletonNote(c));
+                    out.push_back(Note::singleNote(c));
                 } else {
                     // ignored
                 }
@@ -104,8 +104,8 @@ const std::vector<Note> parseNoteFile(std::ifstream &stream) {
 }
 
 
-void Piano::load(const std::string &file) noexcept(false) {
-    std::ifstream stream(file.c_str());
+void Piano::load(const char* file) noexcept(false) {
+    std::ifstream stream(file);
     stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     auto notes = parseNoteFile(stream);
     stream.close();
@@ -131,7 +131,7 @@ void play(const Piano& piano, const Note& note, std::unique_ptr<ShiftGuard>& shi
         } else {
             shift_ptr.reset(); // destroy any existing shift guard
             // uppercase letters must be sent
-            const char upper = (key >= 97 && key <= 122) ? key - 32 : key;
+            const char upper = (key >= 'a' && key <= 'z') ? key - 32 : key;
             playKey(piano, upper);
         }
         Sleep(note.multi_key_delay);

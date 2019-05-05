@@ -10,7 +10,7 @@
 int main(const int argc, const char* argv[]) {
     if (argc < 2) {
         puts("Usage: <input file>");
-        //return 1;
+        return 1;
     }
 
     HWND hWindowHandle = FindWindow(nullptr, "Garry's Mod"); // TODO: find by process name
@@ -21,7 +21,7 @@ int main(const int argc, const char* argv[]) {
     Piano piano(hWindowHandle);
 
     try {
-        piano.load("song.txt");
+        piano.load(argv[1]);
     } catch(std::ifstream::failure &ex) {
         std::cerr << "Failed to read file\n";
         std::cerr << ex.what() << '\n'; // not very useful

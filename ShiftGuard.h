@@ -26,6 +26,7 @@ public:
     ~ShiftGuard() {
         isHeld = false;
         SendMessage(piano.hWindowHandle, WM_KEYUP, VK_SHIFT, SHIFT_LPARAM);
+        Sleep(NO_DELAY);
     }
 
     ShiftGuard(const ShiftGuard&) = delete; // can not be copied, there should one ever be 1 instance in existence
