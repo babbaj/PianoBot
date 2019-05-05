@@ -17,17 +17,6 @@ void playMultiNote(const Piano* piano, const Note& note) {
     assert(note.type == NoteType::MULTI);
 }
 
-static const std::vector<std::string> splitByRegex(const std::string &input, const std::regex &pattern) {
-    std::sregex_iterator iter(input.begin(), input.end(), pattern); // std::regex_search is literally broken
-    std::sregex_iterator iter_end;
-    std::vector<std::string> args;
-
-    std::for_each(iter, iter_end, [&](auto& match) {
-        args.push_back(match.str());
-    });
-
-    return args;
-}
 
 std::vector<std::string> groups(const std::string& str, const std::regex& regex) { // this is pretty bad
     std::sregex_token_iterator non_matching_iter(str.begin(), str.end(), regex, -1);
@@ -92,9 +81,7 @@ const std::vector<Note> parseNoteFile(std::ifstream &stream) {
 
     const std::string str((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
 
-
     const auto vec = groups(str, multi_regex);
-
 
     std::vector<Note> out;
     for (const auto& token : vec) {
@@ -121,6 +108,7 @@ void Piano::load(const std::string &file) noexcept(false) {
     std::ifstream stream(file.c_str());
     stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     auto notes = parseNoteFile(stream);
+    stream.close();
     this->loaded_song = std::move(notes);
 }
 
@@ -142,8 +130,8 @@ void play(const Piano& piano, const Note& note, std::unique_ptr<ShiftGuard>& shi
             playKey(piano, BLACK_KEYS.at(key));
         } else {
             shift_ptr.reset(); // destroy any existing shift guard
-            // uppercase char must be sent
-            const char upper = (key >= 97 && key <= 122) ? std::toupper(key) : key;
+            // uppercase letters must be sent
+            const char upper = (key >= 97 && key <= 122) ? key - 32 : key;
             playKey(piano, upper);
         }
         Sleep(note.multi_key_delay);

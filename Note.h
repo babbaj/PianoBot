@@ -15,7 +15,6 @@ constexpr auto FAST_DELAY = 50; // {}
 constexpr auto NO_DELAY = 3; // [] play together
 
 
-
 class Note;
 
 using note_player_t = auto(*) (Note&) -> void;
