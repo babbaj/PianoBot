@@ -1,3 +1,6 @@
 [submodule "midifile"]
 	path = midifile
 	url = https://github.com/craigsapp/midifile
+[submodule "boost-cmake"]
+	path = boost-cmake
+	url = https://github.com/Orphis/boost-cmake.git
