@@ -19,10 +19,10 @@ class Note;
 
 using note_player_t = auto(*) (Note&) -> void;
 
-enum class NoteType {
-    SINGLETON,
+enum class NoteType { // TODO: delete this?
+    SINGLE,
     MULTI,
-    SILENT // used for delay
+    SILENT
 };
 
 class Note {
@@ -31,36 +31,22 @@ public:
 
     const std::vector<char> keys;
 
-    union {
-        // Delay between each of this note's keys.
-        // For [] notes this should be NO_DELAY
-        // For Single and Silent keys this will be the same value as delay (this is a union)
-        const unsigned int multi_key_delay;
-
-        // delay between this note and the next
-        // only for silent notes
-        const unsigned int delay;
-    };
+    // delay between this note and the next
+    const unsigned int delay;
 
 
     static Note singleNote(char key) {
-        return Note{NoteType::SINGLETON, {key}, 0};
+        return Note{NoteType::SINGLE, {key}, NOTE_LENGTH};
     }
 
-    static Note silentNote(unsigned int length) {
-        return Note{NoteType::SILENT, {}, length};
-    }
-
-    template<typename Iter>
-    Note fastMultiNote(Iter begin, Iter end) { // {} groups // TODO: delete this
-        assert(begin != end);
-        return Note{NoteType::MULTI, {begin, end}, FAST_DELAY};
+    static Note silentNote(unsigned int delay_len) {
+        return Note{NoteType::SILENT, {}, delay_len};
     }
 
     template<typename Iter>
-    static Note multiNote(Iter begin, Iter end) { // []/() groups
+    static Note multiNote(Iter begin, Iter end) { // [] groups
         assert(begin != end);
-        return Note{NoteType ::MULTI, {begin, end}, NO_DELAY};
+        return Note{NoteType ::MULTI, {begin, end}, NOTE_LENGTH};
     }
 
 };

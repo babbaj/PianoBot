@@ -11,7 +11,7 @@ constexpr auto SHIFT_LPARAM = 0x002C0001; // includes scancode
 class ShiftGuard {
     const Piano &piano;
 
-    static bool isHeld;
+    static bool isHeld; // runtime borrow checking :^(
 
 public:
     explicit ShiftGuard(const Piano &_piano): piano(_piano) {

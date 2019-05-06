@@ -13,9 +13,6 @@
 #include <regex>
 #include <cctype>
 
-void playMultiNote(const Piano* piano, const Note& note) {
-    assert(note.type == NoteType::MULTI);
-}
 
 
 std::vector<std::string> groups(const std::string& str, const std::regex& regex) { // this is pretty bad
@@ -86,11 +83,11 @@ const std::vector<Note> parseNoteFile(std::ifstream &stream) {
     std::vector<Note> out;
     for (const auto& token : vec) {
         if (matches(token, multi_regex)) {
-            out.push_back(Note::multiNote(token.begin() + 1, token.end() - 1));
+            out.push_back(Note::multiNote(token.begin() + 1, token.end() - 1)); // TODO: filter invalid keys
         } else {
             for (char c : token) {
                 if (c == ' ' || PAUSE_CHARS.find(c) != PAUSE_CHARS.end()) {
-                    out.push_back(Note::silentNote(c == ' ' ? NOTE_LENGTH : NOTE_LENGTH * 4)); // TODO: find good pause time
+                    out.push_back(Note::silentNote(c == ' ' ? NOTE_LENGTH : NOTE_LENGTH * 4));
                 } else if (VALID_KEYS.find(c) != VALID_KEYS.end()) {
                     out.push_back(Note::singleNote(c));
                 } else {
@@ -119,10 +116,6 @@ void playKey(const Piano &piano, char key) {
 }
 
 void play(const Piano& piano, const Note& note, std::unique_ptr<ShiftGuard>& shift_ptr) {
-    if (note.type == NoteType::SILENT) {
-        Sleep(note.delay);
-        return;
-    }
 
     for (const auto key : note.keys) {
         if (isBlackKey(key)) {
@@ -134,9 +127,10 @@ void play(const Piano& piano, const Note& note, std::unique_ptr<ShiftGuard>& shi
             const char upper = (key >= 'a' && key <= 'z') ? key - 32 : key;
             playKey(piano, upper);
         }
-        Sleep(note.multi_key_delay);
+        Sleep(key == ' ' ? FAST_DELAY : NO_DELAY); // a space in a multinote is a very short delay
     }
-    Sleep(NOTE_LENGTH);
+
+    Sleep(note.delay); // usually NOTE_LENGTH
 }
 
 
