@@ -11,13 +11,9 @@
 
 constexpr auto NOTE_LENGTH = 150;
 
-constexpr auto FAST_DELAY = 50; // {}
+constexpr auto FAST_DELAY = 100; // {}
 constexpr auto NO_DELAY = 3; // [] play together
 
-
-class Note;
-
-using note_player_t = auto(*) (Note&) -> void;
 
 enum class NoteType { // TODO: delete this?
     SINGLE,

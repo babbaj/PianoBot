@@ -1,13 +1,26 @@
 #include <array>
 #include <iostream>
 #include <exception>
+#include <iomanip>
 
 #include <Windows.h>
 
 #include "Piano.h"
-//#include "MidiFile.h"
+
+#include "MidiFile.h"
+#include "Options.h"
 
 #include <boost/program_options.hpp>
+
+
+bool hasEnding (std::string const &fullString, std::string const &ending) {
+    if (fullString.length() >= ending.length()) {
+        return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+    } else {
+        return false;
+    }
+}
+
 
 
 int main(const int argc, const char* argv[]) {
@@ -36,8 +49,13 @@ int main(const int argc, const char* argv[]) {
         }
         Piano piano(hWindowHandle);
 
+        const std::string fileName = argv[1];
         try {
-            piano.load(argv[1]);
+            if (hasEnding(fileName, ".mid")) {
+                piano.loadMidi(fileName.c_str());
+            } else {
+                piano.loadText(fileName.c_str());
+            }
         } catch (std::ifstream::failure &ex) {
             std::cerr << "Failed to read file\n";
             std::cerr << ex.what() << '\n'; // not very useful

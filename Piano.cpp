@@ -12,6 +12,7 @@
 #include <iostream>
 #include <regex>
 #include <cctype>
+#include <algorithm>
 
 
 
@@ -101,13 +102,7 @@ const std::vector<Note> parseNoteFile(std::ifstream &stream) {
 }
 
 
-void Piano::load(const char* file) noexcept(false) {
-    std::ifstream stream(file);
-    stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    auto notes = parseNoteFile(stream);
-    stream.close();
-    this->loaded_song = std::move(notes);
-}
+
 
 void playKey(const Piano &piano, char key) {
     SendMessage(piano.hWindowHandle, WM_KEYDOWN, key, 0x1);
@@ -115,9 +110,10 @@ void playKey(const Piano &piano, char key) {
     SendMessage(piano.hWindowHandle, WM_KEYUP, key, 0x1);
 }
 
-void play(const Piano& piano, const Note& note, std::unique_ptr<ShiftGuard>& shift_ptr) {
+void playNote(const Piano &piano, const Note &note, std::unique_ptr<ShiftGuard> &shift_ptr) {
 
     for (const auto key : note.keys) {
+        // TODO: put this into its own function
         if (isBlackKey(key)) {
             if (!shift_ptr) shift_ptr = std::make_unique<ShiftGuard>(piano); // ensure we have a shift guard
             playKey(piano, BLACK_KEYS.at(key));
@@ -127,25 +123,106 @@ void play(const Piano& piano, const Note& note, std::unique_ptr<ShiftGuard>& shi
             const char upper = (key >= 'a' && key <= 'z') ? key - 32 : key;
             playKey(piano, upper);
         }
+        if (note.type != NoteType::MULTI) break; // dont unnecessarily sleep
+
         Sleep(key == ' ' ? FAST_DELAY : NO_DELAY); // a space in a multinote is a very short delay
     }
 
-    Sleep(note.delay); // usually NOTE_LENGTH
 }
 
 
+
+void Piano::loadText(const char* file) noexcept(false) {
+    std::ifstream stream(file);
+    stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    auto notes = parseNoteFile(stream);
+    stream.close();
+    this->loaded_song = std::move(notes);
+}
+
+void Piano::loadMidi(const char* file) {
+    smf::MidiFile midi;
+    midi.read(file);
+    midi.doTimeAnalysis();
+    midi.linkNotePairs();
+    midi.joinTracks(); // TODO: make sure we only use piano tracks
+    midi.sortTracks();
+
+    this->loaded_song = midi;
+}
+
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+void playText(const Piano&, const std::vector<Note>&);
+void playMidi(const Piano&, const smf::MidiFile&);
+
+
 void Piano::play() {
-    if (!this->loaded_song) {
+    if (this->loaded_song.valueless_by_exception()) {
         std::cerr << "No loaded song\n";
         return;
     }
 
+    std::visit(overloaded {
+        [this](const std::vector<Note>& notes) {
+            playText(*this, notes);
+        },
+        [this](const smf::MidiFile& midi) {
+            playMidi(*this, midi);
+        }
+    }, this->loaded_song);
+
+}
+
+void playText(const Piano& piano, const std::vector<Note>& notes) {
     {
         std::unique_ptr<ShiftGuard> optShift;
-        for (auto &note : *this->loaded_song) {
-            ::play(*this, note, optShift);
+        for (auto &note : notes) {
+            playNote(piano, note, optShift);
+            Sleep(note.delay); // usually NOTE_LENGTH
         }
     }
+}
 
+void playNote(const Piano& piano, char key, std::unique_ptr<ShiftGuard> &shift_ptr) {
+    if (isBlackKey(key)) {
+        if (!shift_ptr) shift_ptr = std::make_unique<ShiftGuard>(piano); // ensure we have a shift guard
+        playKey(piano, BLACK_KEYS.at(key));
+    } else {
+        shift_ptr.reset(); // destroy any existing shift guard
+        // uppercase letters must be sent
+        const char upper = (key >= 'a' && key <= 'z') ? key - 32 : key;
+        playKey(piano, upper);
+    }
+}
+
+void playMidi(const Piano& piano, const smf::MidiFile& midi) {
+    const auto midiTo61 = [](int midiKey) -> int { // may be out of range
+        return midiKey - 35;
+    };
+
+    const int TPQ = midi.getTicksPerQuarterNote();
+    const auto& track = midi[0];
+
+    std::unique_ptr<ShiftGuard> shift_guard;
+    for (int eventIdx = 0; eventIdx < track.size(); eventIdx++) {
+        const auto& event = track[eventIdx];
+        if (event.isNoteOn()) {
+            //std::cout << midiTo61(event.getKeyNumber()) << '\n';
+
+            const int keyNum = std::clamp(midiTo61(event.getKeyNumber()), 1, 61);
+            const char key = KEYNUM_TO_KEY.at(keyNum);
+
+            playNote(piano, key, shift_guard);
+
+            if (eventIdx < track.size() - 1) { // if not last note
+                const auto& next = track[eventIdx + 1];
+                const double timeDiff = next.seconds - event.seconds;
+                const int timeDiffMillis = timeDiff * 1000;
+                Sleep(timeDiffMillis);
+            }
+        }
+    }
 }
 
