@@ -217,9 +217,14 @@ void playMidi(const Piano& piano, const smf::MidiFile& midi) {
             playNote(piano, key, shift_guard);
 
             if (eventIdx < track.size() - 1) { // if not last note
-                const auto& next = track[eventIdx + 1];
+                const auto& next = [&]{
+                    for (int i = eventIdx + 1; eventIdx < track.size(); i++) {
+                        if (track[i].isNoteOn()) return track[i];
+                    }
+                    return track[eventIdx]; // TODO: handle this correctly
+                }();
                 const double timeDiff = next.seconds - event.seconds;
-                const int timeDiffMillis = timeDiff * 1000;
+                const int timeDiffMillis = timeDiff * 1000.0;
                 Sleep(timeDiffMillis);
             }
         }
