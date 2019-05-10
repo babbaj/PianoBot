@@ -13,6 +13,7 @@
 #include <regex>
 #include <cctype>
 #include <algorithm>
+#include <chrono>
 
 
 
@@ -167,9 +168,8 @@ void Piano::loadMidi(const char* file) {
     midi.doTimeAnalysis();
     midi.linkNotePairs();
     midi.joinTracks();
-    midi.sortTracks(); // might not be needed
 
-    this->loaded_song = midi;
+    this->loaded_song = std::move(midi);
 }
 
 
@@ -207,6 +207,9 @@ void playText(const Piano& piano, const std::vector<Note>& notes) {
     }
 }
 
+#define duration(a) std::chrono::duration_cast<std::chrono::milliseconds>(a).count()
+#define timeNow() std::chrono::high_resolution_clock::now()
+
 void playMidi(const Piano& piano, const smf::MidiFile& midi) {
     const auto midiTo61 = [](int midiKey) -> int { // may be out of range
         return midiKey - 35;
@@ -221,7 +224,9 @@ void playMidi(const Piano& piano, const smf::MidiFile& midi) {
             const int keyNum = std::clamp(midiTo61(event.getKeyNumber()), 1, 61);
             const char key = KEYNUM_TO_KEY.at(keyNum);
 
+            const auto now = timeNow();
             playKey(piano, key, shift_guard);
+            const auto dur = duration(timeNow() - now); // measure how long it takes to send a key input
 
             if (eventIdx < track.size() - 1) { // if not last note
                 const auto& next = [&]{
@@ -230,9 +235,10 @@ void playMidi(const Piano& piano, const smf::MidiFile& midi) {
                     }
                     return track[eventIdx]; // TODO: handle this correctly
                 }();
-                const double timeDiff = next.seconds - event.seconds;
-                const int timeDiffMillis = timeDiff * 1000.0;
-                Sleep(timeDiffMillis);
+                const unsigned int timeDiffMillis = (next.seconds - event.seconds) * 1000.0;
+                const auto sleep_time = dur < timeDiffMillis ? timeDiffMillis - dur : 0; // we will count the time it took to send the previous input as sleep time
+
+                Sleep(sleep_time);
             }
         }
     }
