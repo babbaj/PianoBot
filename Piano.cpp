@@ -140,23 +140,44 @@ void Piano::loadText(const char* file) noexcept(false) {
     this->loaded_song = std::move(notes);
 }
 
+void removePercussionNotes(smf::MidiFile& midi) {
+    for (int i = 0; i < midi.getTrackCount(); i++) {
+        for (int j = 0; j < midi[i].getEventCount(); j++) {
+            if (midi[i][j].isNote()) {
+                int channel = midi[i][j].getChannelNibble();
+                if (channel == 9) {
+                    midi[i][j].clear();
+                }
+            }
+        }
+    }
+
+    midi.removeEmpties();
+}
 void Piano::loadMidi(const char* file) {
     smf::MidiFile midi;
     midi.read(file);
+    if (!midi.status()) {
+        std::cerr << "Problem reading MIDI file\n";
+        return;
+    }
+    removePercussionNotes(midi); // should be good enough
+
     midi.doTimeAnalysis();
     midi.linkNotePairs();
-    midi.joinTracks(); // TODO: make sure we only use piano tracks
-    midi.sortTracks();
+    midi.joinTracks();
+    midi.sortTracks(); // might not be needed
 
     this->loaded_song = midi;
 }
 
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
 
 void playText(const Piano&, const std::vector<Note>&);
 void playMidi(const Piano&, const smf::MidiFile&);
 
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 void Piano::play() {
     if (this->loaded_song.valueless_by_exception()) {
@@ -201,15 +222,12 @@ void playMidi(const Piano& piano, const smf::MidiFile& midi) {
     const auto midiTo61 = [](int midiKey) -> int { // may be out of range
         return midiKey - 35;
     };
-
-    const int TPQ = midi.getTicksPerQuarterNote();
     const auto& track = midi[0];
 
     std::unique_ptr<ShiftGuard> shift_guard;
     for (int eventIdx = 0; eventIdx < track.size(); eventIdx++) {
         const auto& event = track[eventIdx];
         if (event.isNoteOn()) {
-            //std::cout << midiTo61(event.getKeyNumber()) << '\n';
 
             const int keyNum = std::clamp(midiTo61(event.getKeyNumber()), 1, 61);
             const char key = KEYNUM_TO_KEY.at(keyNum);
@@ -218,7 +236,7 @@ void playMidi(const Piano& piano, const smf::MidiFile& midi) {
 
             if (eventIdx < track.size() - 1) { // if not last note
                 const auto& next = [&]{
-                    for (int i = eventIdx + 1; eventIdx < track.size(); i++) {
+                    for (int i = eventIdx + 1; i < track.size(); i++) {
                         if (track[i].isNoteOn()) return track[i];
                     }
                     return track[eventIdx]; // TODO: handle this correctly
