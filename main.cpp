@@ -42,7 +42,7 @@ int main(const int argc, const char* argv[]) {
         }
 
 
-        HWND hWindowHandle = FindWindow(nullptr, "Garry's Mod"); // TODO: find by process name
+        HWND hWindowHandle = FindWindow(nullptr, "Garry's Mod");
         if (!hWindowHandle) {
             std::cerr << "Failed to acquire handle\n";
             return 1;

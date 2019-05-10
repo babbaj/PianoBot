@@ -47,9 +47,6 @@ public:
 
 };
 
-using song_t = std::vector<Note>; // TODO: song struct?
-
-
 
 
 

@@ -104,30 +104,31 @@ const std::vector<Note> parseNoteFile(std::ifstream &stream) {
 
 
 
-void playKey(const Piano &piano, char key) {
+void sendKey(const Piano &piano, char key) {
     SendMessage(piano.hWindowHandle, WM_KEYDOWN, key, 0x1);
     Sleep(NO_DELAY);
     SendMessage(piano.hWindowHandle, WM_KEYUP, key, 0x1);
 }
 
-void playNote(const Piano &piano, const Note &note, std::unique_ptr<ShiftGuard> &shift_ptr) {
+void playKey(const Piano &piano, char key, std::unique_ptr<ShiftGuard> &shift_ptr) {
+    if (isBlackKey(key)) {
+        if (!shift_ptr) shift_ptr = std::make_unique<ShiftGuard>(piano); // ensure we have a shift guard
+        sendKey(piano, BLACK_KEYS.at(key));
+    } else {
+        shift_ptr.reset(); // destroy any existing shift guard
+        // uppercase letters must be sent
+        const char upper = (key >= 'a' && key <= 'z') ? key - 32 : key;
+        sendKey(piano, upper);
+    }
+}
 
+void playNote(const Piano& piano, const Note &note, std::unique_ptr<ShiftGuard> &shift_ptr) {
     for (const auto key : note.keys) {
-        // TODO: put this into its own function
-        if (isBlackKey(key)) {
-            if (!shift_ptr) shift_ptr = std::make_unique<ShiftGuard>(piano); // ensure we have a shift guard
-            playKey(piano, BLACK_KEYS.at(key));
-        } else {
-            shift_ptr.reset(); // destroy any existing shift guard
-            // uppercase letters must be sent
-            const char upper = (key >= 'a' && key <= 'z') ? key - 32 : key;
-            playKey(piano, upper);
-        }
+        playKey(piano, key, shift_ptr);
         if (note.type != NoteType::MULTI) break; // dont unnecessarily sleep
 
         Sleep(key == ' ' ? FAST_DELAY : NO_DELAY); // a space in a multinote is a very short delay
     }
-
 }
 
 
@@ -206,18 +207,6 @@ void playText(const Piano& piano, const std::vector<Note>& notes) {
     }
 }
 
-void playNote(const Piano& piano, char key, std::unique_ptr<ShiftGuard> &shift_ptr) {
-    if (isBlackKey(key)) {
-        if (!shift_ptr) shift_ptr = std::make_unique<ShiftGuard>(piano); // ensure we have a shift guard
-        playKey(piano, BLACK_KEYS.at(key));
-    } else {
-        shift_ptr.reset(); // destroy any existing shift guard
-        // uppercase letters must be sent
-        const char upper = (key >= 'a' && key <= 'z') ? key - 32 : key;
-        playKey(piano, upper);
-    }
-}
-
 void playMidi(const Piano& piano, const smf::MidiFile& midi) {
     const auto midiTo61 = [](int midiKey) -> int { // may be out of range
         return midiKey - 35;
@@ -232,7 +221,7 @@ void playMidi(const Piano& piano, const smf::MidiFile& midi) {
             const int keyNum = std::clamp(midiTo61(event.getKeyNumber()), 1, 61);
             const char key = KEYNUM_TO_KEY.at(keyNum);
 
-            playNote(piano, key, shift_guard);
+            playKey(piano, key, shift_guard);
 
             if (eventIdx < track.size() - 1) { // if not last note
                 const auto& next = [&]{
