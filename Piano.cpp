@@ -103,8 +103,6 @@ const std::vector<Note> parseNoteFile(std::ifstream &stream) {
 }
 
 
-
-
 void sendKey(const Piano &piano, char key) {
     SendMessage(piano.hWindowHandle, WM_KEYDOWN, key, 0x1);
     Sleep(NO_DELAY);
@@ -229,16 +227,19 @@ void playMidi(const Piano& piano, const smf::MidiFile& midi) {
             const auto dur = duration(timeNow() - now); // measure how long it takes to send a key input
 
             if (eventIdx < track.size() - 1) { // if not last note
-                const auto& next = [&]{
+                const auto& opt_next = [&]() -> std::optional<smf::MidiEvent> {
                     for (int i = eventIdx + 1; i < track.size(); i++) {
                         if (track[i].isNoteOn()) return track[i];
                     }
-                    return track[eventIdx]; // TODO: handle this correctly
+                    return std::nullopt;
                 }();
-                const unsigned int timeDiffMillis = (next.seconds - event.seconds) * 1000.0;
-                const auto sleep_time = dur < timeDiffMillis ? timeDiffMillis - dur : 0; // we will count the time it took to send the previous input as sleep time
+                if (opt_next) {
+                    const unsigned int timeDiffMillis = (opt_next->seconds - event.seconds) * 1000.0;
+                    // we will count the time it took to send the previous input as sleep time
+                    const auto sleep_time = dur < timeDiffMillis ? timeDiffMillis - dur : 0;
 
-                Sleep(sleep_time);
+                    Sleep(sleep_time);
+                }
             }
         }
     }

@@ -30,8 +30,7 @@ public:
     }
 
     ShiftGuard(const ShiftGuard&) = delete; // can not be copied, there should one ever be 1 instance in existence
-
-    ShiftGuard(ShiftGuard&&) = default; // can be moved
+    ShiftGuard(ShiftGuard&&) = delete;
 
 };
 

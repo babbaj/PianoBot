@@ -11,7 +11,7 @@
 
 constexpr auto NOTE_LENGTH = 150;
 
-constexpr auto FAST_DELAY = 100; // {}
+constexpr auto FAST_DELAY = 100;
 constexpr auto NO_DELAY = 3; // [] play together
 
 
